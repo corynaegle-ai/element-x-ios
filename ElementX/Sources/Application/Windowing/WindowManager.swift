@@ -120,19 +120,32 @@ class WindowManager: SecureWindowManagerProtocol {
 
 private class PassthroughWindow: UIWindow {
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        guard let hitView = super.hitTest(point, with: event) else {
-            return nil
+        if #available(iOS 26, *) { // https://stackoverflow.com/a/79768998/730924
+            guard let rootView = rootViewController?.view else {
+                return nil
+            }
+            
+            if rootView.layer.hitTest(point)?.name == nil {
+                return rootView
+            } else {
+                // pass through the touch to the window below
+                return nil
+            }
+        } else {
+            guard let hitView = super.hitTest(point, with: event) else {
+                return nil
+            }
+            
+            guard let rootViewController else {
+                return nil
+            }
+            
+            guard hitView != self else {
+                return nil
+            }
+            
+            // If the returned view is the `UIHostingController`'s view, ignore.
+            return rootViewController.view == hitView ? nil : hitView
         }
-        
-        guard let rootViewController else {
-            return nil
-        }
-        
-        guard hitView != self else {
-            return nil
-        }
-        
-        // If the returned view is the `UIHostingController`'s view, ignore.
-        return rootViewController.view == hitView ? nil : hitView
     }
 }
