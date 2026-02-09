@@ -165,18 +165,42 @@ struct FormattedBodyText: View {
         let mode: TimelineBubbleLayout.Size.BubbleWidthMode
         
         @State private var maxWidth: CGFloat = .zero
+        @State private var showCopiedFeedback = false
         
         var body: some View {
-            ScrollView(.horizontal) {
-                MessageText(attributedString: attributedString)
-                    .padding([.horizontal, .top], 4)
-                    .padding(.bottom, 8)
-                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { maxWidth = $0 }
+            ZStack(alignment: .topTrailing) {
+                ScrollView(.horizontal) {
+                    MessageText(attributedString: attributedString)
+                        .padding([.horizontal, .top], 4)
+                        .padding(.bottom, 8)
+                        .padding(.trailing, 32) // Make room for copy button
+                        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { maxWidth = $0 }
+                }
+                .frame(maxWidth: mode == .layout ? maxWidth : nil)
+                .background(.compound._bgCodeBlock)
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+                .scrollIndicatorsFlash(onAppear: true)
+                
+                // Copy button overlay
+                if mode == .rendering {
+                    Button {
+                        UIPasteboard.general.string = String(attributedString.characters)
+                        showCopiedFeedback = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            showCopiedFeedback = false
+                        }
+                    } label: {
+                        Image(systemName: showCopiedFeedback ? "checkmark" : "doc.on.doc")
+                            .font(.system(size: 14))
+                            .foregroundColor(showCopiedFeedback ? .green : .compound.textSecondary)
+                            .padding(6)
+                            .background(.compound._bgCodeBlock.opacity(0.9))
+                            .cornerRadius(4)
+                    }
+                    .padding(4)
+                    .accessibilityLabel(L10n.actionCopy)
+                }
             }
-            .frame(maxWidth: mode == .layout ? maxWidth : nil)
-            .background(.compound._bgCodeBlock)
-            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
-            .scrollIndicatorsFlash(onAppear: true)
             .padding(.horizontal, 4)
         }
     }
