@@ -58,8 +58,12 @@ class ServerConfirmationScreenViewModel: ServerConfirmationScreenViewModelType, 
             Task { state.window = window }
         case .confirm:
             switch state.mode {
-            case .confirmation: Task { await confirmServer() }
-            case .picker: Task { await pickServer() }
+            case .confirmation:
+                startLoading()
+                Task { await confirmServer() }
+            case .picker:
+                startLoading()
+                Task { await pickServer() }
             }
         case .changeServer:
             actionsSubject.send(.changeServer)
